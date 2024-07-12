@@ -158,183 +158,99 @@ class Aggregator(ABC):
         for client_id in range(self.n_test_clients):
             self.toggle_client(client_id, mode="test")
 
-    # def write_logs(self):
-    #     self.toggle_test_clients()
-
-    #     for global_logger, clients, mode in [
-    #         (self.global_train_logger, self.clients, "train"),
-    #         (self.global_test_logger, self.test_clients, "test")
-    #     ]:
-    #         if len(clients) == 0:
-    #             continue
-
-    #         global_train_loss = 0.
-    #         global_train_acc = 0.
-    #         global_test_loss = 0.
-    #         global_test_acc = 0.
-
-    #         total_n_samples = 0
-    #         total_n_test_samples = 0
-
-    #         for client_id, client in enumerate(clients):
-
-    #             train_loss, train_acc, test_loss, test_acc = client.write_logs()
-
-    #             if self.verbose > 1:
-    #                 print("*" * 30)
-    #                 print(f"Client {client_id}..")
-    #                 print(f"Train Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.3f}%|", end="")
-    #                 print(f"Test Loss: {test_loss:.3f} | Test Acc: {test_acc * 100:.3f}% |")
-
-    #             global_train_loss += train_loss * client.n_train_samples
-    #             global_train_acc += train_acc * client.n_train_samples
-    #             global_test_loss += test_loss * client.n_test_samples
-    #             global_test_acc += test_acc * client.n_test_samples
-
-    #             total_n_samples += client.n_train_samples
-    #             total_n_test_samples += client.n_test_samples
-
-    #         global_train_loss /= total_n_samples
-    #         global_test_loss /= total_n_test_samples
-    #         global_train_acc /= total_n_samples
-    #         global_test_acc /= total_n_test_samples
-
-    #         if self.verbose > 0:
-    #             print("+" * 30)
-    #             print("Global..")
-    #             print(f"Train Loss: {global_train_loss:.3f} | Train Acc: {global_train_acc * 100:.3f}% |", end="")
-    #             print(f"Test Loss: {global_test_loss:.3f} | Test Acc: {global_test_acc * 100:.3f}% |")
-    #             print("+" * 50)
-
-    #         global_logger.add_scalar("Train/Loss", global_train_loss, self.c_round)
-    #         global_logger.add_scalar("Train/Metric", global_train_acc, self.c_round)
-    #         global_logger.add_scalar("Test/Loss", global_test_loss, self.c_round)
-    #         global_logger.add_scalar("Test/Metric", global_test_acc, self.c_round)
-
-    #     if self.verbose > 0:
-    #         print("#" * 80)
-
     def write_logs(self):
         self.toggle_test_clients()
-    
+
         for global_logger, clients, mode in [
             (self.global_train_logger, self.clients, "train"),
             (self.global_test_logger, self.test_clients, "test")
         ]:
             if len(clients) == 0:
                 continue
-    
+
             global_train_loss = 0.
+            global_train_acc = 0.
             global_test_loss = 0.
-    
+            global_test_acc = 0.
+
             total_n_samples = 0
             total_n_test_samples = 0
-    
+
             for client_id, client in enumerate(clients):
-    
-                train_loss, _, test_loss, _ = client.write_logs() 
-    
+
+                train_loss, train_acc, test_loss, test_acc = client.write_logs()
+
                 if self.verbose > 1:
                     print("*" * 30)
                     print(f"Client {client_id}..")
-                    print(f"Train Loss: {train_loss:.3f} | Test Loss: {test_loss:.3f} |")
-    
+                    print(f"Train Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.3f}%|", end="")
+                    print(f"Test Loss: {test_loss:.3f} | Test Acc: {test_acc * 100:.3f}% |")
+
                 global_train_loss += train_loss * client.n_train_samples
+                global_train_acc += train_acc * client.n_train_samples
                 global_test_loss += test_loss * client.n_test_samples
-    
+                global_test_acc += test_acc * client.n_test_samples
+
                 total_n_samples += client.n_train_samples
                 total_n_test_samples += client.n_test_samples
-    
+
             global_train_loss /= total_n_samples
             global_test_loss /= total_n_test_samples
-    
+            global_train_acc /= total_n_samples
+            global_test_acc /= total_n_test_samples
+
             if self.verbose > 0:
                 print("+" * 30)
                 print("Global..")
-                print(f"Train Loss: {global_train_loss:.3f} | Test Loss: {global_test_loss:.3f} |")
+                print(f"Train Loss: {global_train_loss:.3f} | Train Acc: {global_train_acc * 100:.3f}% |", end="")
+                print(f"Test Loss: {global_test_loss:.3f} | Test Acc: {global_test_acc * 100:.3f}% |")
                 print("+" * 50)
-    
+
             global_logger.add_scalar("Train/Loss", global_train_loss, self.c_round)
+            global_logger.add_scalar("Train/Metric", global_train_acc, self.c_round)
             global_logger.add_scalar("Test/Loss", global_test_loss, self.c_round)
-    
+            global_logger.add_scalar("Test/Metric", global_test_acc, self.c_round)
+
         if self.verbose > 0:
             print("#" * 80)
 
-    # def evaluate(self):
-    #     """
-    #     evaluate the aggregator, returns the performance of every client in the aggregator
-
-    #     :return
-    #         clients_results: (np.array of size (self.n_clients, 2, 2))
-    #             number of correct predictions and total number of samples per client both for train part and test part
-    #         test_client_results: (np.array of size (self.n_test_clients))
-    #             number of correct predictions and total number of samples per client both for train part and test part
-
-    #     """
-
-    #     clients_results = []
-    #     test_client_results = []
-
-    #     for results, clients, mode in [
-    #         (clients_results, self.clients, "train"),
-    #         (test_client_results, self.test_clients, "test")
-    #     ]:
-    #         if len(clients) == 0:
-    #             continue
-
-    #         print(f"evaluate {mode} clients..")
-    #         for client_id, client in enumerate(tqdm(clients)):
-    #             if not client.is_ready():
-    #                 self.toggle_client(client_id, mode=mode)
-
-    #             _, train_acc, _, test_acc = client.write_logs()
-
-    #             results.append([
-    #                 [train_acc * client.n_train_samples, client.n_train_samples],
-    #                 [test_acc * client.n_test_samples, client.n_test_samples]
-    #             ])
-
-    #             client.free_memory()
-
-    #     return np.array(clients_results, dtype=np.uint16), np.array(test_client_results, dtype=np.uint16)
-
     def evaluate(self):
         """
-        Evaluate the aggregator, returns the performance of every client in the aggregator for regression.
-    
-        :return:
+        evaluate the aggregator, returns the performance of every client in the aggregator
+
+        :return
             clients_results: (np.array of size (self.n_clients, 2, 2))
-                MSE values and total number of samples per client both for train and test parts
+                number of correct predictions and total number of samples per client both for train part and test part
             test_client_results: (np.array of size (self.n_test_clients))
-                MSE values and total number of samples per client both for train and test parts
+                number of correct predictions and total number of samples per client both for train part and test part
+
         """
-    
+
         clients_results = []
         test_client_results = []
-    
+
         for results, clients, mode in [
             (clients_results, self.clients, "train"),
             (test_client_results, self.test_clients, "test")
         ]:
             if len(clients) == 0:
                 continue
-    
-            print(f"Evaluating {mode} clients..")
+
+            print(f"evaluate {mode} clients..")
             for client_id, client in enumerate(tqdm(clients)):
                 if not client.is_ready():
                     self.toggle_client(client_id, mode=mode)
-    
-                _, train_loss, _, test_loss = client.write_logs()  
-    
-                results.append([
-                    [train_loss, client.n_train_samples],
-                    [test_loss, client.n_test_samples]
-                ])
-    
-                client.free_memory()
-    
-        return np.array(clients_results), np.array(test_client_results)
 
+                _, train_acc, _, test_acc = client.write_logs()
+
+                results.append([
+                    [train_acc * client.n_train_samples, client.n_train_samples],
+                    [test_acc * client.n_test_samples, client.n_test_samples]
+                ])
+
+                client.free_memory()
+
+        return np.array(clients_results, dtype=np.uint16), np.array(test_client_results, dtype=np.uint16)
 
     def save_state(self, dir_path):
         """

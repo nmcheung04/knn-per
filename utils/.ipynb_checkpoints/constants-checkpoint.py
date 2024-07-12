@@ -1,5 +1,6 @@
 import string
 
+
 ALL_STRATEGIES = {
     "random"
 }
@@ -7,23 +8,20 @@ ALL_STRATEGIES = {
 ALL_MODELS = {
     "mobilenet"
 }
-
 LOADER_TYPE = {
     "synthetic": "tabular",
     "cifar10": "cifar10",
     "cifar100": "cifar100",
     "femnist": "femnist",
-    "shakespeare": "shakespeare",
-    "solar_energy": "tabular"
+    "shakespeare": "shakespeare"
 }
 
 EXTENSIONS = {
-    "tabular": ".csv",
+    "tabular": ".pkl",
     "cifar10": ".pkl",
     "cifar100": ".pkl",
     "femnist": ".pt",
-    "shakespeare": ".txt",
-    "solar_energy": ".csv"
+    "shakespeare": ".txt"
 }
 
 N_CLASSES = {
@@ -31,25 +29,14 @@ N_CLASSES = {
     "cifar10": 10,
     "cifar100": 100,
     "femnist": 62,
-    "shakespeare": 100,
-    "solar_energy": 1
+    "shakespeare": 100
 }
 
 EMBEDDING_DIM = {
     "cifar10": 1280,
     "cifar100": 1280,
     "femnist": 1280,
-    "shakespeare": 1024,
-    "solar_energy": 128
-}
-
-
-SOLAR_ENERGY_CONFIG = {
-    "input_size": 15,  # Adjust based on your feature set
-    "embed_size": 8,   # Adjust as per your model requirements
-    "hidden_size": 256,
-    "output_size": 1,  # Since you're predicting Daily_Production
-    "n_layers": 2,
+    "shakespeare": 1024
 }
 
 SHAKESPEARE_CONFIG = {

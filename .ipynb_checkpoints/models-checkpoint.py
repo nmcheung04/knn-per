@@ -1,8 +1,8 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 import torchvision.models as models
+
 
 class LinearLayer(nn.Module):
     def __init__(self, input_dimension, num_classes, bias=True):
@@ -16,17 +16,18 @@ class LinearLayer(nn.Module):
 
 
 class TwoLinearLayers(nn.Module):
-    def __init__(self, input_dimension, hidden_dimension, output_dimension):
+    def __init__(self, input_dimension, hidden_dimension, output_dimension, bias=False):
         super(TwoLinearLayers, self).__init__()
-        self.fc1 = nn.Linear(input_dimension, hidden_dimension)
-        self.fc2 = nn.Linear(hidden_dimension, output_dimension)
         self.input_dimension = input_dimension
+        self.hidden_dimension = hidden_dimension
+        self.num_classes = output_dimension
+
+        self.fc1 = nn.Linear(input_dimension, hidden_dimension, bias=bias)
+        self.fc2 = nn.Linear(hidden_dimension, output_dimension, bias=bias)
 
     def forward(self, x):
-        x = x.view(-1, self.input_dimension)  
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
+        return self.fc2(self.fc1(x))
+
 
 class FemnistCNN(nn.Module):
     """

@@ -37,11 +37,7 @@ def get_loader(type_, path, batch_size, train, inputs=None, targets=None):
     :return: torch.utils.DataLoader
     """
     if type_ == "tabular":
-        # print(path)
         dataset = TabularDataset(path)
-        # for i in range(len(dataset)):
-        #     features, target, idx = dataset[i]
-        #     print(f"Example {idx}: Features = {features}, Target = {target}")
     elif type_ == "cifar10":
         dataset = SubCIFAR10(path, cifar10_data=inputs, cifar10_targets=targets)
     elif type_ == "cifar100":
@@ -64,38 +60,70 @@ def get_loader(type_, path, batch_size, train, inputs=None, targets=None):
 
 def get_loaders(type_, data_dir, batch_size, is_validation):
     """
-    Constructs lists of `torch.utils.DataLoader` objects from the given files in `root_path`;
-    corresponding to `train_iterator`, `val_iterator`, and `test_iterator`.
-    `val_iterator` iterates on the same dataset as `train_iterator`, the difference is only in drop_last.
-
-    :param data_dir: Directory of the data folder
-    :param batch_size: Batch size for data loaders
-    :param is_validation: (bool) If `True`, validation part is used as test
-    :return: 
-        train_iterators, val_iterators, test_iterators
+    constructs lists of `torch.utils.DataLoader` object from the given files in `root_path`;
+     corresponding to `train_iterator`, `val_iterator` and `test_iterator`;
+     `val_iterator` iterates on the same dataset as `train_iterator`, the difference is only in drop_last
+    :param type_: type of the dataset;
+    :param data_dir: directory of the data folder
+    :param batch_size:
+    :param is_validation: (bool) if `True` validation part is used as test
+    :return:
+        train_iterator, val_iterator, test_iterator
         (List[torch.utils.DataLoader], List[torch.utils.DataLoader], List[torch.utils.DataLoader])
     """
+    if type_ == "cifar10":
+        inputs, targets = get_cifar10()
+    elif type_ == "cifar100":
+        inputs, targets = get_cifar100()
+    else:
+        inputs, targets = None, None
+
     train_iterators, val_iterators, test_iterators = [], [], []
 
     for task_id, task_dir in enumerate(tqdm(os.listdir(data_dir))):
         task_data_path = os.path.join(data_dir, task_dir)
 
-        train_file_path = os.path.join(task_data_path, "train.csv")
-        val_file_path = os.path.join(task_data_path, "train.csv")  # Assuming validation uses train data
-        if is_validation:
-            test_file_path = os.path.join(task_data_path, "val.csv")
-        else:
-            test_file_path = os.path.join(task_data_path, "test.csv")
+        train_iterator = \
+            get_loader(
+                type_=type_,
+                path=os.path.join(task_data_path, f"train{EXTENSIONS[type_]}"),
+                batch_size=batch_size,
+                inputs=inputs,
+                targets=targets,
+                train=True
+            )
 
-        train_iterator = get_loader(type_, train_file_path, batch_size, train=True)
-        val_iterator = get_loader(type_, val_file_path, batch_size, train=False)
-        test_iterator = get_loader(type_, test_file_path, batch_size, train=False)
+        val_iterator = \
+            get_loader(
+                type_=type_,
+                path=os.path.join(task_data_path, f"train{EXTENSIONS[type_]}"),
+                batch_size=batch_size,
+                inputs=inputs,
+                targets=targets,
+                train=False
+            )
+
+        if is_validation:
+            test_set = "val"
+        else:
+            test_set = "test"
+
+        test_iterator = \
+            get_loader(
+                type_=type_,
+                path=os.path.join(task_data_path, f"{test_set}{EXTENSIONS[type_]}"),
+                batch_size=batch_size,
+                inputs=inputs,
+                targets=targets,
+                train=False
+            )
 
         train_iterators.append(train_iterator)
         val_iterators.append(val_iterator)
         test_iterators.append(test_iterator)
 
     return train_iterators, val_iterators, test_iterators
+
 
 def get_model(name, model_name, device, input_dimension=None, hidden_dimension=None, chkpts_path=None):
     """
@@ -115,10 +143,9 @@ def get_model(name, model_name, device, input_dimension=None, hidden_dimension=N
     :param chkpts_path: path to chkpts; if specified the weights of the model are initialized from chkpts,
                         otherwise the weights are initialized randomly; default is None.
     """
-    if name == "solar_energy":
-        print("get_model solar")
+    if name == "synthetic":
         model = TwoLinearLayers(
-            input_dimension=15,
+            input_dimension=input_dimension,
             hidden_dimension=hidden_dimension,
             output_dimension=1
         )
@@ -300,11 +327,10 @@ def get_learner(
     """
     torch.manual_seed(seed)
 
-    if name == "solar_energy":
-        print("get_learner solar_energy")
+    if name == "synthetic":
         criterion = nn.MSELoss(reduction="none").to(device)
         metric = mse
-        is_binary_classification = False
+        is_binary_classification = True
     elif name == "cifar10":
         criterion = nn.CrossEntropyLoss(reduction="none").to(device)
         metric = accuracy
@@ -365,7 +391,7 @@ def get_learner(
             is_binary_classification=is_binary_classification
         )
     else:
-        learn = Learner(
+        return Learner(
             model=model,
             model_name=model_name,
             criterion=criterion,
@@ -375,8 +401,6 @@ def get_learner(
             lr_scheduler=lr_scheduler,
             is_binary_classification=is_binary_classification
         )
-        print(learn.metric)
-        return learn
 
 
 def get_aggregator(

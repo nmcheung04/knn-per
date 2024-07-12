@@ -20,7 +20,7 @@ class ArgumentsManager(ABC):
         self.parser.add_argument(
             'experiment',
             help='name of experiment, possible are:'
-                 '{"solar_energy"}',
+                 '{"cifar10", "cifar100", "femnist", "shakespeare"}',
             type=str
         )
         self.parser.add_argument(
@@ -40,7 +40,7 @@ class ArgumentsManager(ABC):
             '--device',
             help='device to use, either cpu or cuda; default is cpu',
             type=str,
-            default="cuda"
+            default="cpu"
         )
         self.parser.add_argument(
             "--input_dimension",

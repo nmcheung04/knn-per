@@ -1,7 +1,6 @@
 import os
 import pickle
 import string
-import pandas as pd
 
 import torch
 from torchvision.datasets import CIFAR10, CIFAR100
@@ -14,12 +13,12 @@ from PIL import Image
 
 class TabularDataset(Dataset):
     """
-    Constructs a torch.utils.Dataset object from a CSV file containing solar energy data.
+    Constructs a torch.utils.Dataset object from a pickle file;
+    expects pickle file stores tuples of the form (x, y) where x is vector and y is a scalar
 
     Attributes
     ----------
-    data: pandas DataFrame
-        DataFrame containing the solar energy data
+    data: iterable of tuples (x, y)
 
     Methods
     -------
@@ -31,20 +30,18 @@ class TabularDataset(Dataset):
 
     def __init__(self, path):
         """
-        :param path: path to CSV file containing solar energy data
+        :param path: path to .pkl file
 
         """
-        self.data = pd.read_csv(path)
-        self.features = self.data.drop(columns=['stid', 'Daily_Production'])
-        self.targets = self.data['Daily_Production']
+        with open(path, "rb") as f:
+            self.data = pickle.load(f)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        x = self.features.iloc[idx].values
-        y = self.targets.iloc[idx]
-        return torch.tensor(x, dtype=torch.float32), torch.tensor(y, dtype=torch.float32), idx
+        x, y = self.data[idx]
+        return torch.tensor(x, dtype=torch.float32), torch.tensor(y, dtype=torch.int64), idx
 
 
 class SubFEMNIST(Dataset):

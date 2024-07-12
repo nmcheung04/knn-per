@@ -3,9 +3,7 @@ import torch.nn.functional as F
 
 
 def mse(y_pred, y):
-    y_pred = y_pred.squeeze()
-    # print("mse")
-    return F.mse_loss(y_pred, y, reduction="mean")
+    return F.mse_loss(y_pred, y, reduction="sum")
 
 
 def binary_accuracy(y_pred, y):

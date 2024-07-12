@@ -122,7 +122,6 @@ class Learner:
         self.optimizer.zero_grad()
 
         y_pred = self.model(x)
-        y_pred = y_pred.squeeze()  # Add this line
         loss_vec = self.criterion(y_pred, y)
 
         if weights is not None:
@@ -165,7 +164,6 @@ class Learner:
         self.optimizer.zero_grad()
 
         y_pred = self.model(x)
-        y_pred = y_pred.squeeze()  # Add this line
         loss_vec = self.criterion(y_pred, y)
         metric = self.metric(y_pred, y) / len(y)
 
@@ -220,8 +218,9 @@ class Learner:
                 y = y.type(torch.float32).unsqueeze(1)
 
             self.optimizer.zero_grad()
+
             y_pred = self.model(x)
-            y_pred = y_pred.squeeze()  # Add this line
+
             loss_vec = self.criterion(y_pred, y)
             if weights is not None:
                 weights = weights.to(self.device)
@@ -273,79 +272,39 @@ class Learner:
             self.set_param_tensor(initial_param_tensor)
             self.optimizer.step()
 
-    # def evaluate_iterator(self, iterator):
-    #     """
-    #     evaluate learner on `iterator`
-
-    #     :param iterator:
-    #     :type iterator: torch.utils.data.DataLoader
-
-    #     :return
-    #         global_loss and  global_metric accumulated over the iterator
-
-    #     """
-    #     self.model.eval()
-
-    #     global_loss = 0.
-    #     global_metric = 0.
-    #     n_samples = 0
-
-    #     with torch.no_grad():
-    #         for x, y, _ in iterator:
-    #             x = x.to(self.device).type(torch.float32)
-    #             y = y.to(self.device)
-
-    #             if self.is_binary_classification:
-    #                 y = y.type(torch.float32).unsqueeze(1)
-
-    #             y_pred = self.model(x)
-    #             y_pred = y_pred.squeeze()  # Add this line
-    #             global_loss += self.criterion(y_pred, y).sum().item()
-    #             global_metric += self.metric(y_pred, y).item()
-
-    #             n_samples += y.size(0)
-
-    #     return global_loss / n_samples, global_metric / n_samples
-
-    def evaluate_iterator(self, iterator, task="classification"):
+    def evaluate_iterator(self, iterator):
         """
-        Evaluate learner on `iterator`.
-    
-        :param iterator: torch.utils.data.DataLoader
-        :param task: Task type, "classification" or "regression"
-        :type task: str
-    
-        :return: global_loss and global_metric accumulated over the iterator
+        evaluate learner on `iterator`
+
+        :param iterator:
+        :type iterator: torch.utils.data.DataLoader
+
+        :return
+            global_loss and  global_metric accumulated over the iterator
+
         """
         self.model.eval()
-    
-        global_loss = 0.0
-        global_metric = 0.0
+
+        global_loss = 0.
+        global_metric = 0.
         n_samples = 0
-    
+
         with torch.no_grad():
             for x, y, _ in iterator:
                 x = x.to(self.device).type(torch.float32)
                 y = y.to(self.device)
-    
-                if task == "classification":
-                    if self.is_binary_classification:
-                        y = y.type(torch.float32).unsqueeze(1)
-                    y_pred = self.model(x)
-                    loss = self.criterion(y_pred, y).sum().item()
-                    metric = self.metric(y_pred, y).item()
-                elif task == "regression":
-                    y = y.type(torch.float32)
-                    y_pred = self.model(x).squeeze()
-                    loss = F.mse_loss(y_pred, y, reduction="sum").item()
-                    metric = F.mse_loss(y_pred, y, reduction="mean").item()  # Mean squared error as the metric
-    
-                global_loss += loss
-                global_metric += metric
-                n_samples += y.size(0)
-    
-        return global_loss / n_samples, global_metric / n_samples
 
+                if self.is_binary_classification:
+                    y = y.type(torch.float32).unsqueeze(1)
+
+                y_pred = self.model(x)
+
+                global_loss += self.criterion(y_pred, y).sum().item()
+                global_metric += self.metric(y_pred, y).item()
+
+                n_samples += y.size(0)
+
+        return global_loss / n_samples, global_metric / n_samples
 
     def fit_batches(self, iterator, n_steps, weights=None, frozen_modules=None):
         """

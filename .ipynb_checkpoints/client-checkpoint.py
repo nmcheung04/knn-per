@@ -87,18 +87,18 @@ class Client(object):
             iterator=self.train_iterator,
             n_epochs=self.local_steps,
         )
-        
+
     def write_logs(self):
-        # print("please work")
-        train_loss, train_metric = self.learner.evaluate_iterator(self.val_iterator, task="regression")
-        test_loss, test_metric = self.learner.evaluate_iterator(self.test_iterator, task="regression")
+
+        train_loss, train_acc = self.learner.evaluate_iterator(self.val_iterator)
+        test_loss, test_acc = self.learner.evaluate_iterator(self.test_iterator)
 
         self.logger.add_scalar("Train/Loss", train_loss, self.counter)
-        self.logger.add_scalar("Train/Metric", train_metric, self.counter)
+        self.logger.add_scalar("Train/Metric", train_acc, self.counter)
         self.logger.add_scalar("Test/Loss", test_loss, self.counter)
-        self.logger.add_scalar("Test/Metric", test_metric, self.counter)
+        self.logger.add_scalar("Test/Metric", test_acc, self.counter)
 
-        return train_loss, train_metric, test_loss, test_metric
+        return train_loss, train_acc, test_loss, test_acc
 
     def save_state(self, path=None):
         """
@@ -517,84 +517,13 @@ class KNNPerClient(Client):
 
         self.datastore.build(self.train_features, self.train_labels)
 
-    # def gather_knn_outputs(self, mode="test", scale=1.):
-    #     """
-    #     computes the k-NN predictions
+    def gather_knn_outputs(self, mode="test", scale=1.):
+        """
+        computes the k-NN predictions
 
-    #     :param mode: possible are "train" and "test", default is "test"
-    #     :param scale: scale of the gaussian kernel, default is 1.0
-    #     """
-    #     if self.capacity <= 0:
-    #         warnings.warn("trying to gather knn outputs with empty datastore", RuntimeWarning)
-    #         return
-
-    #     assert self.features_flag, "Features should be computed before building datastore!"
-    #     assert self.datastore_flag, "Should build datastore before computing knn outputs!"
-
-    #     if mode == "train":
-    #         features = self.train_features
-    #         self.train_knn_outputs_flag = True
-    #     else:
-    #         features = self.test_features
-    #         self.test_knn_outputs_flag = True
-
-    #     distances, indices = self.datastore.index.search(features, self.k)
-    #     similarities = np.exp(-distances / (self.features_dimension * scale))
-    #     neighbors_labels = self.datastore.labels[indices]
-
-    #     masks = np.zeros(((self.num_classes,) + similarities.shape))
-    #     for class_id in range(self.num_classes):
-    #         masks[class_id] = neighbors_labels == class_id
-
-    #     outputs = (similarities * masks).sum(axis=2) / similarities.sum(axis=1)
-
-    #     if mode == "train":
-    #         self.train_knn_outputs = outputs.T
-    #     else:
-    #         self.test_knn_outputs = outputs.T
-
-    # def evaluate(self, weight, mode="test"):
-    #     """
-    #     evaluates the client for a given weight parameter
-
-    #     :param weight: float in [0, 1]
-    #     :param mode: possible are "train" and "test", default is "test"
-
-    #     :return:
-    #         accuracy score
-
-    #     """
-    #     if mode == "train":
-    #         flag = self.train_knn_outputs_flag
-    #         knn_outputs = self.train_knn_outputs
-    #         model_outputs = self.train_model_outputs
-    #         labels = self.train_labels
-
-    #     else:
-    #         flag = self.test_knn_outputs_flag
-    #         knn_outputs = self.test_knn_outputs
-    #         model_outputs = self.test_model_outputs
-    #         labels = self.test_labels
-
-    #     if flag:
-    #         outputs = weight * knn_outputs + (1 - weight) * model_outputs
-    #     else:
-    #         warnings.warn("evaluation is done only with model outputs, datastore is empty", RuntimeWarning)
-    #         outputs = model_outputs
-
-    #     predictions = np.argmax(outputs, axis=1)
-
-    #     correct = (labels == predictions).sum()
-    #     total = len(labels)
-
-    #     if total == 0:
-    #         acc = 1
-    #     else:
-    #         acc = correct / total
-
-    #     return acc
-
-    def gather_knn_outputs(self, mode="test", scale=1.0):
+        :param mode: possible are "train" and "test", default is "test"
+        :param scale: scale of the gaussian kernel, default is 1.0
+        """
         if self.capacity <= 0:
             warnings.warn("trying to gather knn outputs with empty datastore", RuntimeWarning)
             return
@@ -613,19 +542,34 @@ class KNNPerClient(Client):
         similarities = np.exp(-distances / (self.features_dimension * scale))
         neighbors_labels = self.datastore.labels[indices]
 
-        outputs = (similarities[..., None] * neighbors_labels).sum(axis=1) / similarities.sum(axis=1, keepdims=True)
+        masks = np.zeros(((self.num_classes,) + similarities.shape))
+        for class_id in range(self.num_classes):
+            masks[class_id] = neighbors_labels == class_id
+
+        outputs = (similarities * masks).sum(axis=2) / similarities.sum(axis=1)
 
         if mode == "train":
-            self.train_knn_outputs = outputs
+            self.train_knn_outputs = outputs.T
         else:
-            self.test_knn_outputs = outputs
+            self.test_knn_outputs = outputs.T
 
     def evaluate(self, weight, mode="test"):
+        """
+        evaluates the client for a given weight parameter
+
+        :param weight: float in [0, 1]
+        :param mode: possible are "train" and "test", default is "test"
+
+        :return:
+            accuracy score
+
+        """
         if mode == "train":
             flag = self.train_knn_outputs_flag
             knn_outputs = self.train_knn_outputs
             model_outputs = self.train_model_outputs
             labels = self.train_labels
+
         else:
             flag = self.test_knn_outputs_flag
             knn_outputs = self.test_knn_outputs
@@ -638,8 +582,17 @@ class KNNPerClient(Client):
             warnings.warn("evaluation is done only with model outputs, datastore is empty", RuntimeWarning)
             outputs = model_outputs
 
-        mse = F.mse_loss(torch.tensor(outputs), torch.tensor(labels))
-        return mse.item()
+        predictions = np.argmax(outputs, axis=1)
+
+        correct = (labels == predictions).sum()
+        total = len(labels)
+
+        if total == 0:
+            acc = 1
+        else:
+            acc = correct / total
+
+        return acc
 
     def clear_datastore(self):
         """
