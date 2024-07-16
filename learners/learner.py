@@ -417,6 +417,84 @@ class Learner:
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
+    # def compute_embeddings_and_outputs(
+    #         self,
+    #         iterator,
+    #         n_classes,
+    #         apply_softmax=True,
+    #         return_embedding_flag=True,
+    #         embedding_dim=None
+    # ):
+    #     """
+    #     compute the embeddings and the outputs of all samples in an iterator
+
+    #     :param iterator
+    #     :type iterator: torch.utils.data.DataLoader
+    #     :param n_classes:
+    #     :type n_classes: int
+    #     :param apply_softmax: if selected, a softmax is applied to the output; otherwise, logits are returned
+    #     :type apply_softmax: bool
+    #     :param embedding_dim
+    #     :type embedding_dim: int
+    #     :param return_embedding_flag:
+    #     :type return_embedding_flag: bool
+
+
+    #     :return:
+    #         embeddings: np.array(shape=(n_samples, embedding_dim)) if return_embedding_flag, else None
+    #         outputs: np.array(shape=(n_samples,n_classes))
+    #         labels: np.array(shape=(n_samples,))
+
+    #     """
+    #     print(self.model.features)
+    #     self.model.eval()
+
+    #     if return_embedding_flag:
+    #         assert embedding_dim is not None, "embedding_dim should be provided when return_embedding_flag is True"
+
+    #     n_samples = len(iterator.dataset)
+
+    #     if return_embedding_flag:
+    #         embeddings = np.zeros(shape=(n_samples, embedding_dim), dtype=np.float32)
+    #     else:
+    #         embeddings = None
+
+    #     outputs = np.zeros(shape=(n_samples, n_classes), dtype=np.float32)
+    #     labels = np.zeros(shape=(n_samples,), dtype=np.uint16)
+
+    #     for x, y, indices in iterator:
+    #         x = x.to(self.device)
+    #         labels[indices] = y.data.cpu().numpy()
+
+    #         activation = {}
+    #         if return_embedding_flag:
+
+    #             def hook_fn(model, input_, output):
+    #                 activation["features"] = output.squeeze().cpu().numpy()
+
+    #             if self.model_name == "mobilenet":
+    #                 self.model.features.register_forward_hook(hook_fn)
+    #             elif self.model_name == "resnet":
+    #                 self.model.layer4.register_forward_hook(hook_fn)
+    #             else:
+    #                 error_message = f"feature extractor for{self.model_name} is not implemented"
+
+    #                 raise NotImplementedError(error_message)
+
+    #         with torch.no_grad():
+    #             outs = self.model(x)
+
+    #         if return_embedding_flag:
+    #             embeddings[indices] = activation["features"]
+
+    #         if apply_softmax:
+    #             outputs[indices] = F.softmax(outs, dim=1).cpu().numpy()
+    #         else:
+    #             outputs[indices] = outs.cpu().numpy()
+
+    #     return embeddings, outputs, labels
+
+
     def compute_embeddings_and_outputs(
             self,
             iterator,
@@ -424,74 +502,52 @@ class Learner:
             apply_softmax=True,
             return_embedding_flag=True,
             embedding_dim=None
-    ):
-        """
-        compute the embeddings and the outputs of all samples in an iterator
-
-        :param iterator
-        :type iterator: torch.utils.data.DataLoader
-        :param n_classes:
-        :type n_classes: int
-        :param apply_softmax: if selected, a softmax is applied to the output; otherwise, logits are returned
-        :type apply_softmax: bool
-        :param embedding_dim
-        :type embedding_dim: int
-        :param return_embedding_flag:
-        :type return_embedding_flag: bool
-
-
-        :return:
-            embeddings: np.array(shape=(n_samples, embedding_dim)) if return_embedding_flag, else None
-            outputs: np.array(shape=(n_samples,n_classes))
-            labels: np.array(shape=(n_samples,))
-
-        """
-        self.model.eval()
-
-        if return_embedding_flag:
-            assert embedding_dim is not None, "embedding_dim should be provided when return_embedding_flag is True"
-
-        n_samples = len(iterator.dataset)
-
-        if return_embedding_flag:
-            embeddings = np.zeros(shape=(n_samples, embedding_dim), dtype=np.float32)
-        else:
-            embeddings = None
-
-        outputs = np.zeros(shape=(n_samples, n_classes), dtype=np.float32)
-        labels = np.zeros(shape=(n_samples,), dtype=np.uint16)
-
-        for x, y, indices in iterator:
-            x = x.to(self.device)
-            labels[indices] = y.data.cpu().numpy()
-
-            activation = {}
+        ):
+            self.model.eval()
+    
             if return_embedding_flag:
-
-                def hook_fn(model, input_, output):
-                    activation["features"] = output.squeeze().cpu().numpy()
-
-                if self.model_name == "mobilenet":
-                    self.model.features.register_forward_hook(hook_fn)
-                elif self.model_name == "resnet":
-                    self.model.layer4.register_forward_hook(hook_fn)
-                else:
-                    error_message = f"feature extractor for{self.model_name} is not implemented"
-
-                    raise NotImplementedError(error_message)
-
-            with torch.no_grad():
-                outs = self.model(x)
-
+                assert embedding_dim is not None, "embedding_dim should be provided when return_embedding_flag is True"
+    
+            n_samples = len(iterator.dataset)
+    
             if return_embedding_flag:
-                embeddings[indices] = activation["features"]
-
-            if apply_softmax:
-                outputs[indices] = F.softmax(outs, dim=1).cpu().numpy()
+                embeddings = np.zeros(shape=(n_samples, embedding_dim), dtype=np.float32)
             else:
-                outputs[indices] = outs.cpu().numpy()
-
-        return embeddings, outputs, labels
+                embeddings = None
+    
+            outputs = np.zeros(shape=(n_samples, n_classes), dtype=np.float32)
+            labels = np.zeros(shape=(n_samples,), dtype=np.uint16)
+    
+            for x, y, indices in iterator:
+                x = x.to(self.device)
+                labels[indices] = y.data.cpu().numpy()
+    
+                activation = {}
+                if return_embedding_flag:
+                    def hook_fn(module, input, output):
+                        activation["features"] = output.squeeze().cpu().numpy()
+    
+                    if self.model_name == "mobilenet":
+                        print(self.model.features)
+                        self.model.features.register_forward_hook(hook_fn)
+                    elif self.model_name == "resnet":
+                        print(self.model.features)
+                        self.model.layer4.register_forward_hook(hook_fn)
+                    else:
+                        raise NotImplementedError(f"Feature extractor for {self.model_name} is not implemented.")
+    
+                with torch.no_grad():
+                    outs = self.model(x)
+    
+                if return_embedding_flag:
+                    embeddings[indices] = activation["features"]
+    
+                if apply_softmax:
+                    outputs[indices] = F.softmax(outs, dim=1).cpu().numpy()
+                else:
+                    outputs[indices] = outs.cpu().numpy()
+    
+            return embeddings, outputs, labels
 
     def get_head(self):
         return list(self.model.children())[-1]

@@ -46,8 +46,8 @@ EMBEDDING_DIM = {
 
 SOLAR_ENERGY_CONFIG = {
     "input_size": 15,  # Adjust based on your feature set
-    "embed_size": 8,   # Adjust as per your model requirements
-    "hidden_size": 256,
+    "embed_size": 128,   # Adjust as per your model requirements
+    "hidden_size": 128,
     "output_size": 1,  # Since you're predicting Daily_Production
     "n_layers": 2,
 }

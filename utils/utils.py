@@ -117,10 +117,11 @@ def get_model(name, model_name, device, input_dimension=None, hidden_dimension=N
     """
     if name == "solar_energy":
         print("get_model solar")
+        print(f"Input size: {SOLAR_ENERGY_CONFIG['input_size']}, Hidden size: {SOLAR_ENERGY_CONFIG['hidden_size']}, Output size: {SOLAR_ENERGY_CONFIG['output_size']}")
         model = TwoLinearLayers(
-            input_dimension=15,
-            hidden_dimension=hidden_dimension,
-            output_dimension=1
+            input_dimension=SOLAR_ENERGY_CONFIG['input_size'],
+            hidden_dimension=SOLAR_ENERGY_CONFIG['hidden_size'],
+            output_dimension=SOLAR_ENERGY_CONFIG['output_size']
         )
     elif name == "cifar10":
         if model_name == "mobilenet":
@@ -299,7 +300,7 @@ def get_learner(
 
     """
     torch.manual_seed(seed)
-
+    print(f"get_learner {name}")
     if name == "solar_energy":
         print("get_learner solar_energy")
         criterion = nn.MSELoss(reduction="none").to(device)
@@ -353,7 +354,7 @@ def get_learner(
             scheduler_name=scheduler_name,
             n_rounds=n_rounds
         )
-
+    
     if name == "shakespeare":
         return LanguageModelingLearner(
             model=model,

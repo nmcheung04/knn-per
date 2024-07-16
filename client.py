@@ -495,6 +495,14 @@ class KNNPerClient(Client):
         self.train_model_outputs_flag = True
         self.test_model_outputs_flag = True
 
+        for data in self.train_iterator:
+            print(f"Data from train_iterator: {data}") 
+            inputs = data[0] 
+            break  
+    
+        self.learner.model(inputs.to(self.learner.device))
+        print(f"Model features after train forward pass: {self.learner.model.features}")  
+
         self.train_features, self.train_model_outputs, self.train_labels = \
             self.learner.compute_embeddings_and_outputs(
                 iterator=self.train_iterator,
@@ -502,6 +510,14 @@ class KNNPerClient(Client):
                 n_classes=self.num_classes,
                 apply_softmax=(not self.interpolate_logits)
             )
+        
+        for data in self.test_iterator:
+            print(f"Data from test_iterator: {data}")  
+            inputs = data[0]  
+            break  
+    
+        self.learner.model(inputs.to(self.learner.device))
+        print(f"Model features after test forward pass: {self.learner.model.features}")
 
         self.test_features, self.test_model_outputs, self.test_labels = \
             self.learner.compute_embeddings_and_outputs(

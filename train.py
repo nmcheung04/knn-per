@@ -85,17 +85,14 @@ def init_clients(args_, data_dir, logs_dir, chkpts_dir):
 
 
 def run_experiment(arguments_manager_):
-    """
-
-    :param arguments_manager_:
-    :type arguments_manager_: ArgumentsManager
-
-    """
-
     if not arguments_manager_.initialized:
         arguments_manager_.parse_arguments()
 
     args_ = arguments_manager_.args
+
+    # Check if CUDA is available and set the device accordingly
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    args_.device = device
 
     torch.manual_seed(args_.seed)
 
@@ -112,22 +109,20 @@ def run_experiment(arguments_manager_):
         chkpts_dir = os.path.join("chkpts", arguments_manager_.args_to_string())
 
     print("==> Clients initialization..")
-    clients = \
-        init_clients(
-            args_,
-            data_dir=os.path.join(data_dir, "train"),
-            logs_dir=os.path.join(logs_dir, "train"),
-            chkpts_dir=os.path.join(chkpts_dir, "train")
-        )
+    clients = init_clients(
+        args_,
+        data_dir=os.path.join(data_dir, "train"),
+        logs_dir=os.path.join(logs_dir, "train"),
+        chkpts_dir=os.path.join(chkpts_dir, "train")
+    )
 
     print("==> Test Clients initialization..")
-    test_clients = \
-        init_clients(
-            args_,
-            data_dir=os.path.join(data_dir, "test"),
-            logs_dir=os.path.join(logs_dir, "test"),
-            chkpts_dir=os.path.join(chkpts_dir, "test")
-        )
+    test_clients = init_clients(
+        args_,
+        data_dir=os.path.join(data_dir, "test"),
+        logs_dir=os.path.join(logs_dir, "test"),
+        chkpts_dir=os.path.join(chkpts_dir, "test")
+    )
 
     logs_path = os.path.join(logs_dir, "train", "global")
     os.makedirs(logs_path, exist_ok=True)
@@ -137,38 +132,37 @@ def run_experiment(arguments_manager_):
     os.makedirs(logs_path, exist_ok=True)
     global_test_logger = SummaryWriter(logs_path)
 
-    global_learner = \
-        get_learner(
-            name=args_.experiment,
-            model_name=args_.model_name,
-            device=args_.device,
-            optimizer_name=args_.optimizer,
-            scheduler_name=args_.lr_scheduler,
-            initial_lr=args_.lr,
-            n_rounds=args_.n_rounds,
-            seed=args_.seed,
-            mu=args_.mu,
-            input_dimension=args_.input_dimension,
-            hidden_dimension=args_.hidden_dimension
-        )
+    global_learner = get_learner(
+        name=args_.experiment,
+        model_name=args_.model_name,
+        device=args_.device,
+        optimizer_name=args_.optimizer,
+        scheduler_name=args_.lr_scheduler,
+        initial_lr=args_.lr,
+        n_rounds=args_.n_rounds,
+        seed=args_.seed,
+        mu=args_.mu,
+        input_dimension=args_.input_dimension,
+        hidden_dimension=args_.hidden_dimension
+    )
 
-    aggregator = \
-        get_aggregator(
-            aggregator_type=args_.aggregator_type,
-            clients=clients,
-            global_learner=global_learner,
-            sampling_rate=args_.sampling_rate,
-            log_freq=args_.log_freq,
-            global_train_logger=global_train_logger,
-            global_test_logger=global_test_logger,
-            test_clients=test_clients,
-            verbose=args_.verbose,
-            seed=args_.seed
-        )
+    aggregator = get_aggregator(
+        aggregator_type=args_.aggregator_type,
+        clients=clients,
+        global_learner=global_learner,
+        sampling_rate=args_.sampling_rate,
+        log_freq=args_.log_freq,
+        global_train_logger=global_train_logger,
+        global_test_logger=global_test_logger,
+        test_clients=test_clients,
+        verbose=args_.verbose,
+        seed=args_.seed
+    )
 
     aggregator.write_logs()
 
     print("Training..")
+    print(f"Using device: {args_.device}")
     for ii in tqdm(range(args_.n_rounds)):
         aggregator.mix()
 

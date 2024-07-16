@@ -14,19 +14,33 @@ class LinearLayer(nn.Module):
     def forward(self, x):
         return self.fc(x)
 
-
 class TwoLinearLayers(nn.Module):
     def __init__(self, input_dimension, hidden_dimension, output_dimension):
         super(TwoLinearLayers, self).__init__()
         self.fc1 = nn.Linear(input_dimension, hidden_dimension)
+        self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_dimension, output_dimension)
-        self.input_dimension = input_dimension
+        self.features = None
 
     def forward(self, x):
-        x = x.view(-1, self.input_dimension)  
-        x = F.relu(self.fc1(x))
+        self.features = self.fc1(x) 
+        print(f"Features after fc1: {self.features}")
+        x = self.relu(self.features)
         x = self.fc2(x)
         return x
+        
+# class TwoLinearLayers(nn.Module):
+#     def __init__(self, input_dimension, hidden_dimension, output_dimension):
+#         super(TwoLinearLayers, self).__init__()
+#         self.fc1 = nn.Linear(input_dimension, hidden_dimension)
+#         self.fc2 = nn.Linear(hidden_dimension, output_dimension)
+#         self.input_dimension = input_dimension
+
+#     def forward(self, x):
+#         x = x.view(-1, self.input_dimension)  
+#         x = F.relu(self.fc1(x))
+#         x = self.fc2(x)
+#         return x
 
 class FemnistCNN(nn.Module):
     """
