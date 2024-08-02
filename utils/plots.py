@@ -24,12 +24,14 @@ def plot_capacity_effect(ax, results_dir, save_path=None, label=None):
     capacities_grid = np.load(os.path.join(results_dir, "capacities_grid.npy"))
 
     average_scores = np.nan_to_num(all_scores).sum(axis=0) / n_test_samples.sum()
+    print(f"Average scores:  {average_scores}")
 
     for jj, capacity in enumerate(capacities_grid):
-        accuracies = average_scores[:, jj]
+        mse_scores = average_scores[:, jj]
+        # print(f"mse_scores: {mse_scores}")
         ax.plot(
             weights_grid,
-            accuracies,
+            mse_scores,
             linewidth=5.0,
             label=label,
         )
@@ -39,7 +41,7 @@ def plot_capacity_effect(ax, results_dir, save_path=None, label=None):
 
         ax.grid(True, linewidth=2)
 
-        ax.set_ylabel("Accuracy", fontsize=50)
+        ax.set_ylabel("MSE", fontsize=50)
         ax.set_xlabel("Capacity", fontsize=50)
         ax.tick_params(axis='both', labelsize=25)
         ax.set_xticks(np.arange(0, 1. + 1e-6, 0.1))
@@ -65,36 +67,36 @@ def plot_weight_effect(results_dir, save_path=None):
 
     fig, ax = plt.subplots(figsize=(12, 10))
 
-    accuracies = average_scores[:, 2]
+    mse_scores = average_scores[:, 2]
     ax.plot(
         weights_grid,
-        100 * accuracies,
+        mse_scores,
         linewidth=5.0,
         label=r"$\bar{n}_{m} = 5$"
     )
 
-    accuracies = average_scores[:, 10]
+    mse_scores = average_scores[:, 10]
     ax.plot(
         weights_grid,
-        100 * accuracies,
+        mse_scores,
         linewidth=5.0,
         linestyle="dashdot",
         label=r"$\bar{n}_{m} = 25$"
     )
 
-    accuracies = average_scores[:, 25]
+    mse_scores = average_scores[:, 25]
     ax.plot(
         weights_grid,
-        100 * accuracies,
+        mse_scores,
         linewidth=5.0,
         linestyle="dashed",
         label=r"$\bar{n}_{m} = 100$"
     )
 
-    accuracies = average_scores[:, -1]
+    mse_scores = average_scores[:, -1]
     ax.plot(
         weights_grid,
-        100 * accuracies,
+        mse_scores,
         linewidth=5.0,
         linestyle="dotted",
         label=r"$\bar{n}_{m} = 250$"
@@ -102,7 +104,7 @@ def plot_weight_effect(results_dir, save_path=None):
 
     ax.grid(True, linewidth=2)
 
-    ax.set_ylabel("Test accuracy", fontsize=50)
+    ax.set_ylabel("MSE", fontsize=50)
     ax.set_xlabel(r"$\lambda$", fontsize=50)
     ax.tick_params(axis='both', labelsize=25)
 
@@ -131,7 +133,7 @@ def plot_hetero_effect(results_dir, save_path=None):
 
         ax.grid(True, linewidth=2)
 
-        ax.set_ylabel("Accuracy", fontsize=50)
+        ax.set_ylabel("MSE", fontsize=50)
         ax.set_xlabel("Capacity", fontsize=50)
         ax.tick_params(axis='both', labelsize=25)
         ax.set_xticks(np.arange(0, 1. + 1e-6, 0.1))

@@ -4,8 +4,10 @@ from utils.args import TestArgumentsManager
 
 def eval_knnper_grid(client_, weights_grid_, capacities_grid_):
     client_results = np.zeros((len(weights_grid_), len(capacities_grid_)))
+    print("Capacities Grid:", capacities_grid_)
 
     for ii, capacity in enumerate(capacities_grid_):
+        # print(f"Current Capacity (index {ii}):", capacity)
         client_.capacity = capacity
         client_.clear_datastore()
         client_.build_datastore()
@@ -43,8 +45,8 @@ def run(arguments_manager_):
 
     data_dir = get_data_dir(args_.experiment)
 
-    weights_grid_ = np.arange(0, 1. + 1e-6, args_.weights_grid_resolution)
-    capacities_grid_ = np.arange(0., 1. + 1e-6, args_.capacities_grid_resolution)
+    weights_grid_ = np.arange(0.01, 1. + 1e-6, args_.weights_grid_resolution)
+    capacities_grid_ = np.arange(0.01, 1. + 1e-6, args_.capacities_grid_resolution)
 
     all_scores_ = []
     n_test_samples_ = []
@@ -84,10 +86,14 @@ def run(arguments_manager_):
             )
 
         if client.n_train_samples == 0 or client.n_test_samples == 0:
+            print(f"Skipping client with no train or test samples: n_train_samples={client.n_train_samples}, n_test_samples  {client.n_test_samples}")
             continue
 
         client.compute_features_and_model_outputs()
+
         client.clear_datastore()
+        client.build_datastore()
+        client.print_datastore()
 
         client_scores = eval_knnper_grid(client, weights_grid_, capacities_grid_)
 
@@ -100,14 +106,13 @@ def run(arguments_manager_):
 
     return all_scores_, n_test_samples_, weights_grid_, capacities_grid_
 
-
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
     arguments_manager = TestArgumentsManager()
     arguments_manager.parse_arguments()
-
+    # print("xddd")
     all_scores, n_test_samples, weights_grid, capacities_grid = run(arguments_manager)
 
     if "results_dir" in arguments_manager.args:

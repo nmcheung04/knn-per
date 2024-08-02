@@ -3,6 +3,7 @@ import numpy as np
 from datastore import *
 from utils.torch_utils import *
 from utils.constants import *
+import torch.nn.functional as F 
 
 from copy import deepcopy
 
@@ -496,13 +497,12 @@ class KNNPerClient(Client):
         self.test_model_outputs_flag = True
 
         for data in self.train_iterator:
-            print(f"Data from train_iterator: {data}") 
+            # print(f"Data from train_iterator: {data}") 
             inputs = data[0] 
+            self.learner.model(inputs.to(self.learner.device))
+            # print(f"Model features after train forward pass: {self.learner.model.features}")  
             break  
-    
-        self.learner.model(inputs.to(self.learner.device))
-        print(f"Model features after train forward pass: {self.learner.model.features}")  
-
+            
         self.train_features, self.train_model_outputs, self.train_labels = \
             self.learner.compute_embeddings_and_outputs(
                 iterator=self.train_iterator,
@@ -512,12 +512,11 @@ class KNNPerClient(Client):
             )
         
         for data in self.test_iterator:
-            print(f"Data from test_iterator: {data}")  
+            # print(f"Data from test_iterator: {data}")  
             inputs = data[0]  
+            self.learner.model(inputs.to(self.learner.device))
+            # print(f"Model features after test forward pass: {self.learner.model.features}")
             break  
-    
-        self.learner.model(inputs.to(self.learner.device))
-        print(f"Model features after test forward pass: {self.learner.model.features}")
 
         self.test_features, self.test_model_outputs, self.test_labels = \
             self.learner.compute_embeddings_and_outputs(
@@ -526,6 +525,13 @@ class KNNPerClient(Client):
                 n_classes=self.num_classes,
                 apply_softmax=(not self.interpolate_logits)
             )
+        
+        # print(f"Train Features: {self.train_features}")
+        # print(f"Train Model Outputs: {self.train_model_outputs}")
+        print(f"Train Labels: {self.train_labels}")
+        # print(f"Test Features: {self.test_features}")
+        # print(f"Test Model Outputs: {self.test_model_outputs}")
+        print(f"Test Labels: {self.test_labels}")
 
     def build_datastore(self):
         assert self.features_flag, "Features should be computed before building datastore!"
@@ -614,23 +620,27 @@ class KNNPerClient(Client):
         if self.capacity <= 0:
             warnings.warn("trying to gather knn outputs with empty datastore", RuntimeWarning)
             return
-
+    
         assert self.features_flag, "Features should be computed before building datastore!"
         assert self.datastore_flag, "Should build datastore before computing knn outputs!"
-
+    
         if mode == "train":
             features = self.train_features
             self.train_knn_outputs_flag = True
         else:
             features = self.test_features
             self.test_knn_outputs_flag = True
-
+    
         distances, indices = self.datastore.index.search(features, self.k)
         similarities = np.exp(-distances / (self.features_dimension * scale))
         neighbors_labels = self.datastore.labels[indices]
-
+    
+        # Ensure dimensions are aligned for element-wise operations
+        if neighbors_labels.ndim == 2:
+            neighbors_labels = neighbors_labels[..., None]  # Add a dimension to align shapes
+    
         outputs = (similarities[..., None] * neighbors_labels).sum(axis=1) / similarities.sum(axis=1, keepdims=True)
-
+    
         if mode == "train":
             self.train_knn_outputs = outputs
         else:
@@ -654,7 +664,17 @@ class KNNPerClient(Client):
             warnings.warn("evaluation is done only with model outputs, datastore is empty", RuntimeWarning)
             outputs = model_outputs
 
-        mse = F.mse_loss(torch.tensor(outputs), torch.tensor(labels))
+        # Convert outputs and labels to tensors
+        outputs_tensor = torch.tensor(outputs, dtype=torch.float32)
+        labels_tensor = torch.tensor(labels, dtype=torch.float32)
+
+        outputs_tensor = outputs_tensor.squeeze()
+        labels_tensor = labels_tensor.squeeze()
+        
+        # print(f"outputs_tensor shape: {outputs_tensor.shape}")
+        # print(f"labels_tensor shape: {labels_tensor.shape}")
+        
+        mse = F.mse_loss(outputs_tensor, labels_tensor)
         return mse.item()
 
     def clear_datastore(self):
@@ -668,3 +688,12 @@ class KNNPerClient(Client):
         self.datastore_flag = False
         self.train_knn_outputs_flag = False
         self.test_knn_outputs_flag = False
+
+    def print_datastore(self):
+        if self.datastore.labels is not None:
+            print(f"Datastore Labels: {self.datastore.labels}")
+        else:
+            print("Datastore is empty (no labels).")
+
+        print(f"Datastore Index: {self.datastore.index}")
+        print(f"Number of vectors in datastore: {self.datastore.index.ntotal}")

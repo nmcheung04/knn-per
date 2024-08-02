@@ -83,3 +83,15 @@ class DataStore(object):
         """
         self.index = faiss.IndexFlatL2(self.dimension)
         self.labels = None
+
+    def print_datastore(self):
+        if self.labels is not None:
+            print(f"Labels: {self.labels}")
+        else:
+            print("Datastore is empty (no labels).")
+
+        print(f"Index: {self.index}")
+        print(f"Number of vectors in datastore: {self.index.ntotal}")
+        if self.index.ntotal > 0:
+            stored_vectors = self.index.reconstruct_n(0, self.index.ntotal)
+            print(f"Stored Vectors: {stored_vectors}")

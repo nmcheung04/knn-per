@@ -516,20 +516,22 @@ class Learner:
                 embeddings = None
     
             outputs = np.zeros(shape=(n_samples, n_classes), dtype=np.float32)
-            labels = np.zeros(shape=(n_samples,), dtype=np.uint16)
-    
+            labels = np.zeros(shape=(n_samples,), dtype=np.float32)
             for x, y, indices in iterator:
+                # print(f"Batch indices: {indices}")
+                # print(f"Batch labels: {y}")
                 x = x.to(self.device)
+                # print(y.data.cpu().numpy())
                 labels[indices] = y.data.cpu().numpy()
-    
                 activation = {}
                 if return_embedding_flag:
                     def hook_fn(module, input, output):
-                        activation["features"] = output.squeeze().cpu().numpy()
-    
+                        activation["features"] = output.squeeze().detach().cpu().numpy()
                     if self.model_name == "mobilenet":
-                        print(self.model.features)
-                        self.model.features.register_forward_hook(hook_fn)
+                        # print("xdd")
+                        assert self.model.features is not None, "self.model.features is None"
+                        # print(self.model.features)
+                        self.model.fc1.register_forward_hook(hook_fn)
                     elif self.model_name == "resnet":
                         print(self.model.features)
                         self.model.layer4.register_forward_hook(hook_fn)
@@ -546,6 +548,8 @@ class Learner:
                     outputs[indices] = F.softmax(outs, dim=1).cpu().numpy()
                 else:
                     outputs[indices] = outs.cpu().numpy()
+                    
+            print(f"Final labels array: {labels}")
     
             return embeddings, outputs, labels
 

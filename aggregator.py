@@ -90,6 +90,8 @@ class Aggregator(ABC):
             verbose=0,
             seed=None
     ):
+        
+        self.test_losses = []
 
         rng_seed = (seed if (seed is not None and seed >= 0) else int(time.time()))
         self.rng = random.Random(rng_seed)
@@ -256,9 +258,20 @@ class Aggregator(ABC):
     
             global_logger.add_scalar("Train/Loss", global_train_loss, self.c_round)
             global_logger.add_scalar("Test/Loss", global_test_loss, self.c_round)
+
+        self.test_losses.append(global_test_loss)
     
         if self.verbose > 0:
             print("#" * 80)
+
+    def save_test_losses(self, file_path):
+        """
+        Save the list of test losses to a file.
+    
+        :param file_path: Path to the file where test losses will be saved.
+        """
+        np.savetxt(file_path, self.test_losses, header="Test Losses")
+                
 
     # def evaluate(self):
     #     """

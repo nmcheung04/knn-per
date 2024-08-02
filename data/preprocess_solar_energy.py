@@ -170,22 +170,17 @@ def combine_ens_gefs(df_mes, df_train_csv):
     return df_train_merged
 
 def split_df_by_station(df):
-    # Get unique station IDs
     unique_stations = df['stid'].unique()
+
+    # # adjust based on number of stations desired
+    # num_stations = unique_stations[:5]
     
-    # Create a directory to save the split files
-    output_dir = "./raw_data/by_station"  # Adjust as needed
+    output_dir = "./raw_data/by_station" 
     os.makedirs(output_dir, exist_ok=True)
     
-    # Iterate over each unique station ID
     for station_id in unique_stations:
-        # Select rows for the current station ID
-        df_station = df[df['stid'] == station_id]
-        
-        # Construct output file path
+        df_station = df[df['stid'] == station_id] 
         output_file = os.path.join(output_dir, f"{station_id}_data.csv")
-        
-        # Save the split data to CSV
         df_station.to_csv(output_file, index=False)
         print(f"Saved {len(df_station)} rows to {output_file}")
 

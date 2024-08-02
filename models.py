@@ -24,7 +24,7 @@ class TwoLinearLayers(nn.Module):
 
     def forward(self, x):
         self.features = self.fc1(x) 
-        print(f"Features after fc1: {self.features}")
+        # print(f"Features after fc1: {self.features}")
         x = self.relu(self.features)
         x = self.fc2(x)
         return x

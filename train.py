@@ -160,18 +160,20 @@ def run_experiment(arguments_manager_):
     )
 
     aggregator.write_logs()
-
+    
     print("Training..")
     print(f"Using device: {args_.device}")
     for ii in tqdm(range(args_.n_rounds)):
         aggregator.mix()
+
+        aggregator.save_test_losses(f"test_losses_round_{ii}.txt")
 
         if (ii % args_.log_freq) == (args_.log_freq - 1):
             aggregator.save_state(chkpts_dir)
             aggregator.write_logs()
 
     aggregator.save_state(chkpts_dir)
-
+    aggregator.save_test_losses("test_losses_final.txt")
 
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
