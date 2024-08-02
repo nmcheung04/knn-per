@@ -166,8 +166,6 @@ def run_experiment(arguments_manager_):
     for ii in tqdm(range(args_.n_rounds)):
         aggregator.mix()
 
-        aggregator.save_test_losses(f"test_losses_round_{ii}.txt")
-
         if (ii % args_.log_freq) == (args_.log_freq - 1):
             aggregator.save_state(chkpts_dir)
             aggregator.write_logs()
