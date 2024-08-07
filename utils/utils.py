@@ -301,10 +301,16 @@ def get_learner(
     """
     torch.manual_seed(seed)
     print(f"get_learner {name}")
+    # if name == "solar_energy":
+    #     print("get_learner solar_energy")
+    #     criterion = nn.MSELoss(reduction="none").to(device)
+    #     metric = mse
+    #     is_binary_classification = False
     if name == "solar_energy":
         print("get_learner solar_energy")
-        criterion = nn.MSELoss(reduction="none").to(device)
-        metric = mse
+        criterion = nn.L1Loss(reduction="none").to(device)  # Change to L1Loss for MAE
+        metric = mae  
+        print(f"Criterion: {criterion}, Metric: {metric}")
         is_binary_classification = False
     elif name == "cifar10":
         criterion = nn.CrossEntropyLoss(reduction="none").to(device)

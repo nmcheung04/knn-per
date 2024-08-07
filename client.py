@@ -616,7 +616,7 @@ class KNNPerClient(Client):
 
     #     return acc
 
-    def gather_knn_outputs(self, mode="test", scale=1.0):
+    def gather_knn_outputs(self, mode="test", scale= 1.0):
         if self.capacity <= 0:
             warnings.warn("trying to gather knn outputs with empty datastore", RuntimeWarning)
             return
@@ -634,12 +634,17 @@ class KNNPerClient(Client):
         distances, indices = self.datastore.index.search(features, self.k)
         similarities = np.exp(-distances / (self.features_dimension * scale))
         neighbors_labels = self.datastore.labels[indices]
+
+        # print(f"Distances: {distances}, Indicies: {indices}")
+        # print(f"Similarities: {similarities}")
+        # print(f"Neighbors_labels: {neighbors_labels}")
     
-        # Ensure dimensions are aligned for element-wise operations
+        # # Ensure dimensions are aligned for element-wise operations
         if neighbors_labels.ndim == 2:
             neighbors_labels = neighbors_labels[..., None]  # Add a dimension to align shapes
     
         outputs = (similarities[..., None] * neighbors_labels).sum(axis=1) / similarities.sum(axis=1, keepdims=True)
+        # print(outputs)
     
         if mode == "train":
             self.train_knn_outputs = outputs
@@ -674,8 +679,11 @@ class KNNPerClient(Client):
         # print(f"outputs_tensor shape: {outputs_tensor.shape}")
         # print(f"labels_tensor shape: {labels_tensor.shape}")
         
-        mse = F.mse_loss(outputs_tensor, labels_tensor)
-        return mse.item()
+        # mse = F.mse_loss(outputs_tensor, labels_tensor)
+        # return mse.item()
+
+        mae = F.l1_loss(outputs_tensor, labels_tensor)
+        return mae.item()
 
     def clear_datastore(self):
         """
@@ -689,11 +697,34 @@ class KNNPerClient(Client):
         self.train_knn_outputs_flag = False
         self.test_knn_outputs_flag = False
 
-    def print_datastore(self):
-        if self.datastore.labels is not None:
-            print(f"Datastore Labels: {self.datastore.labels}")
-        else:
-            print("Datastore is empty (no labels).")
+    # def print_datastore(self):
+    #     if self.datastore.labels is not None:
+    #         print(f"Datastore Labels: {self.datastore.labels}")
+    #     else:
+    #         print("Datastore is empty (no labels).")
 
-        print(f"Datastore Index: {self.datastore.index}")
-        print(f"Number of vectors in datastore: {self.datastore.index.ntotal}")
+    #     print(f"Datastore Index: {self.datastore.index}")
+    #     print(f"Number of vectors in datastore: {self.datastore.index.ntotal}")
+
+    # def print_features(self):
+    #     """
+    #     Print the features stored in the index.
+    #     """
+    #     if self.index.ntotal > 0:
+    #         stored_vectors = self.index.reconstruct_n(0, self.index.ntotal)
+    #         print(f"Features (Stored Vectors): {stored_vectors}")
+    #     else:
+    #         print("No features stored in the index.")
+
+    # def print_indices(self, query_vectors, k):
+    #     """
+    #     Print the indices of the k-nearest neighbors for the given query vectors.
+
+    #     :param query_vectors: The query vectors to search for nearest neighbors.
+    #     :type query_vectors: numpy.array of shape (n_queries, dimension)
+    #     :param k: The number of nearest neighbors to search for.
+    #     :type k: int
+    #     """
+    #     distances, indices = self.index.search(query_vectors, k)
+    #     print(f"Distances:\n{distances}")
+    #     print(f"Indices:\n{indices}")

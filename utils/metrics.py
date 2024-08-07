@@ -7,6 +7,9 @@ def mse(y_pred, y):
     # print("mse")
     return F.mse_loss(y_pred, y, reduction="mean")
 
+def mae(y_pred, y):
+    y_pred = y_pred.squeeze()
+    return F.l1_loss(y_pred, y, reduction="mean")
 
 def binary_accuracy(y_pred, y):
     y_pred = torch.round(torch.sigmoid(y_pred))  # round predictions to the closest integer

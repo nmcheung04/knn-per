@@ -45,8 +45,8 @@ def run(arguments_manager_):
 
     data_dir = get_data_dir(args_.experiment)
 
-    weights_grid_ = np.arange(0.01, 1. + 1e-6, args_.weights_grid_resolution)
-    capacities_grid_ = np.arange(0.01, 1. + 1e-6, args_.capacities_grid_resolution)
+    weights_grid_ = np.arange(0., 1. + 1e-6, args_.weights_grid_resolution)
+    capacities_grid_ = np.arange(0., 1. + 1e-6, args_.capacities_grid_resolution)
 
     all_scores_ = []
     n_test_samples_ = []
@@ -93,7 +93,8 @@ def run(arguments_manager_):
 
         client.clear_datastore()
         client.build_datastore()
-        client.print_datastore()
+        # client.print_datastore()
+        # client.print_features()
 
         client_scores = eval_knnper_grid(client, weights_grid_, capacities_grid_)
 

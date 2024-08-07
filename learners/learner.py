@@ -327,7 +327,7 @@ class Learner:
             for x, y, _ in iterator:
                 x = x.to(self.device).type(torch.float32)
                 y = y.to(self.device)
-    
+                # print(f"Task: {task}")
                 if task == "classification":
                     if self.is_binary_classification:
                         y = y.type(torch.float32).unsqueeze(1)
@@ -337,8 +337,10 @@ class Learner:
                 elif task == "regression":
                     y = y.type(torch.float32)
                     y_pred = self.model(x).squeeze()
-                    loss = F.mse_loss(y_pred, y, reduction="sum").item()
-                    metric = F.mse_loss(y_pred, y, reduction="mean").item()  # Mean squared error as the metric
+                    # loss = F.mse_loss(y_pred, y, reduction="sum").item()
+                    # metric = F.mse_loss(y_pred, y, reduction="mean").item()  # Mean squared error as the metric
+                    loss = F.l1_loss(y_pred, y, reduction="sum").item()  # MAE as the loss
+                    metric = F.l1_loss(y_pred, y, reduction="mean").item()
     
                 global_loss += loss
                 global_metric += metric
@@ -527,6 +529,7 @@ class Learner:
                 if return_embedding_flag:
                     def hook_fn(module, input, output):
                         activation["features"] = output.squeeze().detach().cpu().numpy()
+                    self.model.fc1.register_forward_hook(hook_fn)
                     if self.model_name == "mobilenet":
                         # print("xdd")
                         assert self.model.features is not None, "self.model.features is None"

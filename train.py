@@ -171,7 +171,7 @@ def run_experiment(arguments_manager_):
             aggregator.write_logs()
 
     aggregator.save_state(chkpts_dir)
-    aggregator.save_test_losses("test_losses_final.txt")
+    aggregator.save_test_losses("test_losses_final_mae.txt")
 
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
